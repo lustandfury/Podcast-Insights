@@ -73,7 +73,7 @@ export function Sidebar({
   const SidebarContent = () => (
     <div className="flex h-full w-full flex-col">
       <div className="flex flex-col px-4 py-3 border-b">
-        <h1 className="font-bold text-xl text-primary mb-3">PodcastInsights</h1>
+        <h1 className="font-bold text-xl text-primary mb-3">Equity IQ</h1>
         <Button variant="outline" size="sm" onClick={() => setIsCreateTabModalOpen(true)}>
           <Plus className="h-4 w-4 mr-1" />
           New Feed
