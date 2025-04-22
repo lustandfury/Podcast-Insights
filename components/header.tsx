@@ -23,7 +23,7 @@ export function Header({ activeInsight, onBack, onSave }: HeaderProps) {
             <span className="sr-only">Back</span>
           </Button>
 
-          <h1 className="font-bold text-lg truncate flex-1">{activeInsight.title}</h1>
+          <h1 className="font-playfair font-bold text-lg truncate flex-1">{activeInsight.title}</h1>
 
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={onSave}>
@@ -49,7 +49,7 @@ export function Header({ activeInsight, onBack, onSave }: HeaderProps) {
   return (
     <header className="border-b bg-white sticky top-0 z-10">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-bold text-xl">
+        <Link href="/" className="font-bold text-xl text-primary">
           PodcastInsights
         </Link>
 

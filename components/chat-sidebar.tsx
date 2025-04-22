@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Plus } from "lucide-react"
+import { Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -18,24 +18,24 @@ export interface Chat {
   title: string
   messages: ChatMessage[]
   createdAt: Date
+  hasUserMessage: boolean
 }
 
 interface ChatSidebarProps {
   insightId: string
   insightTitle: string
-  onChatCreated: (chatId: string) => void
+  onChatCreated: (chatId: string, hasUserMessage: boolean) => void
 }
 
 export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSidebarProps) {
-  const [chats, setChats] = useState<Chat[]>([])
-  const [activeChatId, setActiveChatId] = useState<string | null>(null)
+  const [chat, setChat] = useState<Chat | null>(null)
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Initialize with a default chat if none exists
   useEffect(() => {
-    if (chats.length === 0) {
+    if (!chat) {
       createNewChat()
     }
   }, [])
@@ -45,13 +45,13 @@ export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSide
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [chats, activeChatId])
+  }, [chat])
 
   const createNewChat = () => {
     const newChatId = `chat-${Date.now()}`
     const newChat: Chat = {
       id: newChatId,
-      title: "New Chat", // Default title, will be updated after first question
+      title: "Chat", // Default title
       messages: [
         {
           id: "welcome",
@@ -61,38 +61,15 @@ export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSide
         },
       ],
       createdAt: new Date(),
+      hasUserMessage: false,
     }
 
-    setChats((prevChats) => [...prevChats, newChat])
-    setActiveChatId(newChatId)
-    onChatCreated(newChatId)
-  }
-
-  const updateChatTitle = (chatId: string, userMessage: string) => {
-    // Only update title if this is the first user message
-    const chat = chats.find((c) => c.id === chatId)
-    if (chat && chat.messages.length === 1) {
-      // Only welcome message exists
-      const title = userMessage.slice(0, 10) + (userMessage.length > 10 ? "..." : "")
-      setChats((prevChats) =>
-        prevChats.map((chat) => {
-          if (chat.id === chatId) {
-            return {
-              ...chat,
-              title,
-            }
-          }
-          return chat
-        }),
-      )
-    }
+    setChat(newChat)
+    onChatCreated(newChatId, false) // Initially no user messages
   }
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !activeChatId) return
-
-    const activeChat = chats.find((chat) => chat.id === activeChatId)
-    if (!activeChat) return
+    if (!inputMessage.trim() || !chat) return
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -102,23 +79,19 @@ export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSide
       timestamp: new Date(),
     }
 
-    // Update chat title based on first question
-    updateChatTitle(activeChatId, inputMessage)
+    // Update the chat with the new message and mark as having user message
+    const updatedChat = {
+      ...chat,
+      messages: [...chat.messages, userMessage],
+      hasUserMessage: true,
+    }
 
-    // Update the active chat with the new message
-    const updatedChats = chats.map((chat) => {
-      if (chat.id === activeChatId) {
-        return {
-          ...chat,
-          messages: [...chat.messages, userMessage],
-        }
-      }
-      return chat
-    })
-
-    setChats(updatedChats)
+    setChat(updatedChat)
     setInputMessage("")
     setIsTyping(true)
+
+    // Notify parent that this chat now has a user message
+    onChatCreated(chat.id, true)
 
     // Simulate AI response (in a real app, this would call an API)
     setTimeout(() => {
@@ -129,77 +102,52 @@ export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSide
         timestamp: new Date(),
       }
 
-      setChats((prevChats) =>
-        prevChats.map((chat) => {
-          if (chat.id === activeChatId) {
-            return {
-              ...chat,
-              messages: [...chat.messages, assistantMessage],
-            }
-          }
-          return chat
-        }),
-      )
+      setChat((prevChat) => {
+        if (!prevChat) return null
+        return {
+          ...prevChat,
+          messages: [...prevChat.messages, assistantMessage],
+        }
+      })
       setIsTyping(false)
     }, 1500)
   }
 
-  const activeChat = chats.find((chat) => chat.id === activeChatId)
+  if (!chat) return null
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat selector */}
+      {/* Chat header */}
       <div className="p-4 border-b">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {chats.map((chat) => (
-            <Button
-              key={chat.id}
-              variant={chat.id === activeChatId ? "secondary" : "outline"}
-              size="sm"
-              className="whitespace-nowrap"
-              onClick={() => setActiveChatId(chat.id)}
-            >
-              {chat.title}
-            </Button>
-          ))}
-          <Button variant="outline" size="icon" className="shrink-0" onClick={createNewChat}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        <h2 className="font-medium">Chat about this insight</h2>
       </div>
 
       {/* Chat messages */}
       <ScrollArea className="flex-1 p-4">
-        {activeChat ? (
-          <div className="space-y-4">
-            {activeChat.messages.map((message) => (
-              <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                  }`}
-                >
-                  <p>{message.content}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
+        <div className="space-y-4">
+          {chat.messages.map((message) => (
+            <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[80%] rounded-lg p-3 ${
+                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}
+              >
+                <p>{message.content}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
               </div>
-            ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-lg p-3 bg-muted">
-                  <p>Typing...</p>
-                </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-lg p-3 bg-muted">
+                <p>Typing...</p>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Select a chat or create a new one
-          </div>
-        )}
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </ScrollArea>
 
       {/* Input area */}
@@ -217,9 +165,9 @@ export function ChatSidebar({ insightId, insightTitle, onChatCreated }: ChatSide
             }}
             className="resize-none min-h-[44px] max-h-[120px]"
             rows={1}
-            disabled={!activeChatId || isTyping}
+            disabled={isTyping}
           />
-          <Button onClick={handleSendMessage} disabled={!inputMessage.trim() || !activeChatId || isTyping}>
+          <Button onClick={handleSendMessage} disabled={!inputMessage.trim() || isTyping}>
             <Send className="h-4 w-4" />
           </Button>
         </div>

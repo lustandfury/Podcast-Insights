@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Play, Pause, PlayCircle } from "lucide-react"
+import { Play, Pause, PlayCircle, ArrowLeft, BookmarkIcon, BookmarkPlus, Share2, Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,10 +28,11 @@ interface InsightDetailProps {
   insight: Insight
   onBack: () => void
   onSave: () => void
-  onChatCreated?: (insightId: string, chatId: string) => void
+  onArchive: () => void
+  onChatCreated?: (insightId: string, chatId: string, hasUserMessage: boolean) => void
 }
 
-export function InsightDetail({ insight, onBack, onSave, onChatCreated }: InsightDetailProps) {
+export function InsightDetail({ insight, onBack, onSave, onArchive, onChatCreated }: InsightDetailProps) {
   const [activeTab, setActiveTab] = useState("analysis")
   const [activeSource, setActiveSource] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -95,31 +96,82 @@ export function InsightDetail({ insight, onBack, onSave, onChatCreated }: Insigh
     return sentences.slice(0, 4).map((s) => s.trim() + ".")
   }
 
+  // Function to determine score color
+  const getScoreColor = (score: number) => {
+    if (score >= 9) return "bg-green-600 text-white"
+    if (score >= 7) return "bg-green-500 text-white"
+    if (score >= 5) return "bg-yellow-500 text-white"
+    return "bg-gray-400 text-white"
+  }
+
+  // Function to get score description
+  const getScoreDescription = (score: number) => {
+    if (score >= 9) return "Very High Impact"
+    if (score >= 7) return "High Impact"
+    if (score >= 5) return "Medium Impact"
+    return "Low Impact"
+  }
+
   const keyPoints = realInsight ? generateKeyPoints(realInsight.summary) : []
 
-  const handleChatCreated = (chatId: string) => {
+  const handleChatCreated = (chatId: string, hasUserMessage: boolean) => {
     if (onChatCreated) {
-      onChatCreated(insight.id, chatId)
+      onChatCreated(insight.id, chatId, hasUserMessage)
     }
   }
 
   return (
     <motion.div
-      className="flex h-[calc(100vh-4rem)] bg-white"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
+      className="flex h-screen bg-white"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Chat section (60% width) */}
-      <div className="w-[60%] border-r">
-        <div className="h-full">
-          <ChatSidebar insightId={insight.id} insightTitle={insight.title} onChatCreated={handleChatCreated} />
-        </div>
+      {/* Back button on the left side */}
+      <div className="w-12 flex items-start justify-center pt-4 border-r">
+        <Button variant="ghost" size="icon" onClick={onBack} className="sticky top-4">
+          <ArrowLeft className="h-5 w-5" />
+          <span className="sr-only">Back</span>
+        </Button>
       </div>
 
-      {/* Insight details section (40% width) */}
-      <div className="w-[40%] flex flex-col overflow-hidden">
+      {/* Insight details section (60% width) - Now on the left */}
+      <div className="w-[60%] border-r flex flex-col overflow-hidden">
+        {/* Header for detail view */}
+        <div className="border-b p-4 bg-white z-10">
+          <div className="flex items-center gap-2">
+            <h1 className="font-playfair font-bold text-lg truncate flex-1">{insight.title}</h1>
+
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={onArchive} title="Archive">
+                <Archive className="h-5 w-5" />
+              </Button>
+
+              <Button variant="ghost" size="icon" onClick={onSave} title={insight.saved ? "Unsave" : "Save"}>
+                {insight.saved ? (
+                  <BookmarkIcon className="h-5 w-5 fill-current" />
+                ) : (
+                  <BookmarkPlus className="h-5 w-5" />
+                )}
+              </Button>
+
+              <Button variant="ghost" size="icon" title="Share">
+                <Share2 className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <Badge variant="outline">{insight.category}</Badge>
+            <span className="text-sm text-gray-500">Published: {insight.publishDate}</span>
+
+            {/* Impact Score with description */}
+            <div className={`rounded-full px-2 py-0.5 text-xs font-bold ${getScoreColor(insight.score)}`}>
+              {insight.score.toFixed(1)} - {getScoreDescription(insight.score)}
+            </div>
+          </div>
+        </div>
+
         {/* Main content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <div className="border-b bg-white z-10">
@@ -131,10 +183,10 @@ export function InsightDetail({ insight, onBack, onSave, onChatCreated }: Insigh
 
           <TabsContent value="analysis" className="flex-1 overflow-auto p-4">
             <div>
-              <h2 className="text-lg font-semibold mb-4">Summary</h2>
+              <h2 className="text-xl font-playfair font-bold mb-4">{insight.title}</h2>
               <p className="text-gray-700 mb-6">{insight.summary}</p>
 
-              <h2 className="text-lg font-semibold mb-4">Key Points</h2>
+              <h3 className="text-lg font-semibold mb-4">Key Points</h3>
               <ul className="list-disc pl-5 mb-6 space-y-2">
                 {keyPoints.map((point, index) => (
                   <li key={index} className="text-gray-700">
@@ -143,7 +195,7 @@ export function InsightDetail({ insight, onBack, onSave, onChatCreated }: Insigh
                 ))}
               </ul>
 
-              <h2 className="text-lg font-semibold mb-4">Related Topics</h2>
+              <h3 className="text-lg font-semibold mb-4">Related Topics</h3>
               <div className="flex flex-wrap gap-2 mb-6">
                 {realInsight?.tags.map((tag, index) => (
                   <Badge key={index} variant="secondary">
@@ -209,6 +261,13 @@ export function InsightDetail({ insight, onBack, onSave, onChatCreated }: Insigh
             </div>
           </TabsContent>
         </Tabs>
+      </div>
+
+      {/* Chat section (40% width) - Now on the right */}
+      <div className="w-[calc(40%-3rem)]">
+        <div className="h-full">
+          <ChatSidebar insightId={insight.id} insightTitle={insight.title} onChatCreated={handleChatCreated} />
+        </div>
       </div>
     </motion.div>
   )

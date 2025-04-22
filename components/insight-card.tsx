@@ -3,81 +3,44 @@
 import type React from "react"
 
 import { useState } from "react"
-import {
-  BookmarkIcon,
-  Play,
-  Pause,
-  Share2,
-  Clock,
-  PlayCircle,
-  BookmarkPlus,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  MessageSquare,
-} from "lucide-react"
+import { BookmarkIcon, BookmarkPlus, Share2, MessageSquare, ChevronRight, Play, Pause, Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AudioPlayer } from "@/components/audio-player"
 import type { Insight } from "@/lib/types"
+import { realInsights } from "@/lib/real-data"
 
 interface InsightCardProps {
   insight: Insight
   onSave: () => void
+  onArchive: () => void
   onSelect: (insight: Insight) => void
 }
 
-// Mock data for multiple podcast sources
-interface PodcastSource {
-  id: string
-  podcastName: string
-  episodeNumber: number
-  startTime: number
-  endTime: number
-  audioUrl: string
-  fullEpisodeUrl: string
-}
-
-export function InsightCard({ insight, onSave, onSelect }: InsightCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
+export function InsightCard({ insight, onSave, onArchive, onSelect }: InsightCardProps) {
   const [activeSource, setActiveSource] = useState<string | null>(null)
-  const [showAllSources, setShowAllSources] = useState(true)
   const [isPlaying, setIsPlaying] = useState(false)
 
-  // Mock multiple podcast sources for this insight
-  const podcastSources: PodcastSource[] = [
-    {
-      id: "source1",
-      podcastName: insight.podcastName,
-      episodeNumber: insight.episodeNumber,
-      startTime: insight.startTime,
-      endTime: insight.endTime,
-      audioUrl: insight.audioUrl,
-      fullEpisodeUrl: insight.fullEpisodeUrl,
-    },
-    {
-      id: "source2",
-      podcastName: "The Financial Analyst",
-      episodeNumber: 78,
-      startTime: 845,
-      endTime: 920,
-      audioUrl: insight.audioUrl, // Using same audio for demo
-      fullEpisodeUrl: insight.fullEpisodeUrl,
-    },
-    {
-      id: "source3",
-      podcastName: "Market Trends Weekly",
-      episodeNumber: 42,
-      startTime: 1120,
-      endTime: 1190,
-      audioUrl: insight.audioUrl, // Using same audio for demo
-      fullEpisodeUrl: insight.fullEpisodeUrl,
-    },
-  ]
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent card selection when clicking buttons
+  }
 
-  const togglePlay = (sourceId: string, e: React.MouseEvent) => {
+  // Get the real insight data to access podcast sources
+  const realInsight = realInsights.find((ri) => ri.id === insight.id)
+  const podcastSources = realInsight?.mentionedIn || []
+
+  // Convert timestamp to seconds
+  const convertTimeToSeconds = (timeStr: string) => {
+    const cleanTimeStr = timeStr.replace("00:", "")
+    const [minutes, seconds] = cleanTimeStr.split(":").map(Number)
+    return minutes * 60 + seconds
+  }
+
+  const togglePlay = (sourceIndex: number, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent card selection when clicking play button
+
+    const sourceId = `source-${sourceIndex}`
 
     if (activeSource === sourceId && isPlaying) {
       setIsPlaying(false)
@@ -88,23 +51,49 @@ export function InsightCard({ insight, onSave, onSelect }: InsightCardProps) {
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
   // Get the active podcast source
   const getActiveSource = () => {
-    return podcastSources.find((source) => source.id === activeSource) || podcastSources[0]
+    if (!activeSource) return null
+
+    const index = Number.parseInt(activeSource.split("-")[1])
+    const source = podcastSources[index]
+
+    if (!source) return null
+
+    // Parse the timestamp to get start and end times
+    const timestampParts = source.timestamp.split(" – ")
+    const startTimePart = timestampParts[0].replace("00:", "")
+    const endTimePart = timestampParts[1].replace("00:", "")
+
+    return {
+      id: activeSource,
+      podcastName: source.podcast,
+      episodeNumber: Number.parseInt(source.episode),
+      startTime: convertTimeToSeconds(startTimePart),
+      endTime: convertTimeToSeconds(endTimePart),
+      audioUrl:
+        "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
+      fullEpisodeUrl: "https://example.com/episode",
+    }
   }
 
-  // Display all sources by default
-  const displaySources = podcastSources
-
-  const handleButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent card selection when clicking buttons
+  // Function to determine score color
+  const getScoreColor = (score: number) => {
+    if (score >= 9) return "bg-red-100 text-red-600"
+    if (score >= 7) return "bg-orange-100 text-orange-600"
+    if (score >= 5) return "bg-yellow-100 text-yellow-600"
+    return "bg-gray-400 text-white"
   }
+
+  // Function to get score description
+  const getScoreDescription = (score: number) => {
+    if (score >= 9) return "High Impact"
+    if (score >= 7) return "Medium Impact"
+    if (score >= 5) return "Low Impact"
+    return "Low Impact"
+  }
+
+  const activeSourceData = getActiveSource()
 
   return (
     <Card
@@ -120,124 +109,100 @@ export function InsightCard({ insight, onSave, onSelect }: InsightCardProps) {
         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
 
-      <CardContent className="p-0">
-        <div className="p-4 pb-0">
-          <div className="flex items-start">
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
+      <CardContent className="p-6">
+        <div className="flex items-start">
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
                   {insight.category}
                 </Badge>
+
+                {/* Impact Score with description */}
+                <div className={`rounded-full px-2 py-0.5 text-xs font-bold ${getScoreColor(insight.score)}`}>
+                  {insight.score.toFixed(1)} - {getScoreDescription(insight.score)}
+                </div>
               </div>
-              <h2 className="text-xl font-bold mt-1">{insight.title}</h2>
-              <p className="text-sm text-gray-700 mt-2 line-clamp-3">{insight.summary}</p>
             </div>
+            <h2 className="text-2xl font-playfair font-bold mt-2">{insight.title}</h2>
+            <p className="text-lg text-gray-700 mt-2">{insight.summary}</p>
+
+            {/* Compact podcast sources with play buttons */}
+            {podcastSources.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {podcastSources.map((source, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center rounded-full px-2 py-1 text-xs cursor-pointer transition-colors ${
+                      activeSource === `source-${index}` && isPlaying
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                    onClick={(e) => togglePlay(index, e)}
+                  >
+                    {activeSource === `source-${index}` && isPlaying ? (
+                      <Pause className="h-3 w-3 mr-1" />
+                    ) : (
+                      <Play className="h-3 w-3 mr-1" />
+                    )}
+                    <span className="font-medium">{source.podcast}</span>
+                    <span className="mx-1">•</span>
+                    <span>Ep. {source.episode}</span>
+                    <span className="mx-1">•</span>
+                    <span>{source.timestamp}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Audio player for active source */}
+            {isPlaying && activeSourceData && (
+              <div className="mt-3">
+                <AudioPlayer
+                  audioUrl={activeSourceData.audioUrl}
+                  startTime={activeSourceData.startTime}
+                  endTime={activeSourceData.endTime}
+                  onClose={() => {
+                    setIsPlaying(false)
+                    setActiveSource(null)
+                  }}
+                />
+              </div>
+            )}
           </div>
-
-          {isExpanded && (
-            <div className="mt-4 text-sm text-gray-700">
-              <p className="mb-2">{insight.fullText}</p>
-              <div className="flex items-center text-xs text-gray-500 mt-2">
-                <Clock className="h-3 w-3 mr-1" />
-                <span>Published: {insight.publishDate}</span>
-              </div>
-            </div>
-          )}
         </div>
-
-        {isPlaying && (
-          <AudioPlayer
-            audioUrl={getActiveSource().audioUrl}
-            startTime={getActiveSource().startTime}
-            endTime={getActiveSource().endTime}
-            onClose={() => {
-              setIsPlaying(false)
-              setActiveSource(null)
-            }}
-          />
-        )}
       </CardContent>
 
-      <CardFooter className="flex flex-col p-4 pt-2 border-t mt-4">
-        <div className="w-full">
-          {displaySources.map((source) => (
-            <div key={source.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`h-8 gap-1 ${activeSource === source.id && isPlaying ? "bg-gray-100" : ""}`}
-                  onClick={(e) => togglePlay(source.id, e)}
-                >
-                  {activeSource === source.id && isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  <span>
-                    {formatTime(source.startTime)} - {formatTime(source.endTime)}
-                  </span>
-                </Button>
+      <CardFooter className="flex items-center justify-end gap-2 p-4 pt-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation()
+            onArchive()
+          }}
+          title="Archive"
+        >
+          <Archive className="h-8 w-8" />
+        </Button>
 
-                <span className="text-sm text-gray-500 font-medium">
-                  {source.podcastName} • Ep. {source.episodeNumber}
-                </span>
-              </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSave()
+          }}
+          title={insight.saved ? "Unsave" : "Save"}
+        >
+          {insight.saved ? <BookmarkIcon className="h-8 w-8 fill-current" /> : <BookmarkPlus className="h-8 w-8" />}
+        </Button>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  window.open(source.fullEpisodeUrl, "_blank")
-                }}
-              >
-                <PlayCircle className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-
-          {podcastSources.length > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-1 w-full text-xs text-gray-500"
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowAllSources(!showAllSources)
-              }}
-            >
-              {showAllSources ? (
-                <>
-                  <ChevronUp className="h-3 w-3 mr-1" /> Show fewer sources
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3 w-3 mr-1" /> Show all {podcastSources.length} sources
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-
-        <div className="flex items-center justify-end gap-2 mt-2 w-full">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSave()
-            }}
-          >
-            {insight.saved ? <BookmarkIcon className="h-4 w-4 fill-current" /> : <BookmarkPlus className="h-4 w-4" />}
-          </Button>
-
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleButtonClick}>
-            <Share2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleButtonClick} title="Share">
+          <Share2 className="h-8 w-8" />
+        </Button>
       </CardFooter>
     </Card>
   )

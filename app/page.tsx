@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { PodcastFeed } from "@/components/podcast-feed"
-import { Header } from "@/components/header"
 import type { Insight } from "@/lib/types"
 
 export default function Home() {
@@ -10,19 +9,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        activeInsight={activeInsight}
-        onBack={() => setActiveInsight(null)}
-        onSave={() => {
-          if (activeInsight) {
-            setActiveInsight({
-              ...activeInsight,
-              saved: !activeInsight.saved,
-            })
-          }
-        }}
-      />
-      <main className="container mx-auto">
+      <main className="mx-auto">
         <PodcastFeed activeInsight={activeInsight} onInsightSelect={setActiveInsight} />
       </main>
     </div>

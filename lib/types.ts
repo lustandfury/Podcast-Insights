@@ -13,6 +13,8 @@ export interface Insight {
   audioUrl: string
   fullEpisodeUrl: string
   saved: boolean
+  archived: boolean
+  score: number // Added score property
   companies?: string[]
   sectors?: string[]
   keywords?: string[]
