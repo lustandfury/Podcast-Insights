@@ -13,6 +13,8 @@ import {
   BookmarkPlus,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -106,9 +108,18 @@ export function InsightCard({ insight, onSave, onSelect }: InsightCardProps) {
 
   return (
     <Card
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className="overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 border-l-transparent hover:border-l-primary relative group"
       onClick={() => onSelect(insight)}
     >
+      {/* Add a chat icon button in the top right */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+        <div className="flex items-center text-muted-foreground text-xs">
+          <MessageSquare className="h-4 w-4 mr-1" />
+          <span>Chat</span>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+      </div>
+
       <CardContent className="p-0">
         <div className="p-4 pb-0">
           <div className="flex items-start">

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Menu } from "lucide-react"
+import { Plus, Menu, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -9,22 +9,48 @@ import { CreateTabModal, type TabFilter } from "@/components/create-tab-modal"
 import type { CustomTab } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
+interface RecentChat {
+  id: string
+  insightId: string
+  insightTitle: string
+  lastUpdated: Date
+}
+
 interface SidebarProps {
   activeTab: string
   customTabs: CustomTab[]
+  recentChats?: RecentChat[]
   onTabChange: (tabId: string) => void
   onCreateTab: (name: string, filters: TabFilter) => void
+  onChatSelect?: (insightId: string) => void
 }
 
-export function Sidebar({ activeTab, customTabs, onTabChange, onCreateTab }: SidebarProps) {
+export function Sidebar({
+  activeTab,
+  customTabs,
+  recentChats = [],
+  onTabChange,
+  onCreateTab,
+  onChatSelect,
+}: SidebarProps) {
   const [isCreateTabModalOpen, setIsCreateTabModalOpen] = useState(false)
 
+  // Update the tabs array to use company names instead of categories
   const tabs = [
     { id: "all", name: "All Insights" },
     { id: "saved", name: "Saved" },
-    { id: "market", name: "Market Updates" },
-    { id: "strategy", name: "Investment Strategy" },
+    { id: "Salesforce", name: "Salesforce" },
+    { id: "NVIDIA", name: "NVIDIA" },
+    { id: "Google", name: "Google" },
+    { id: "Microsoft", name: "Microsoft" },
+    { id: "Apple", name: "Apple" },
   ]
+
+  const handleChatSelect = (insightId: string) => {
+    if (onChatSelect) {
+      onChatSelect(insightId)
+    }
+  }
 
   const SidebarContent = () => (
     <div className="flex h-full w-full flex-col">
@@ -63,6 +89,27 @@ export function Sidebar({ activeTab, customTabs, onTabChange, onCreateTab }: Sid
                     onClick={() => onTabChange(tab.id)}
                   >
                     {tab.name}
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {recentChats.length > 0 && (
+            <>
+              <div className="mt-6 mb-2 px-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Recent Chats</h4>
+              </div>
+              <div className="space-y-1">
+                {recentChats.map((chat) => (
+                  <Button
+                    key={chat.id}
+                    variant="ghost"
+                    className="w-full justify-start text-left font-normal"
+                    onClick={() => handleChatSelect(chat.insightId)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="truncate">{chat.insightTitle}</span>
                   </Button>
                 ))}
               </div>

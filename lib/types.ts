@@ -27,3 +27,24 @@ export interface CustomTab {
     keywords: string[]
   }
 }
+
+export interface PodcastMention {
+  podcast: string
+  episode: string
+  timestamp: string
+}
+
+export interface SampleChat {
+  question: string
+  response: string
+}
+
+export interface InsightTopic {
+  id: string
+  company: string
+  topic: string
+  summary: string
+  tags: string[]
+  mentionedIn: PodcastMention[]
+  sampleChat: SampleChat
+}

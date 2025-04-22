@@ -1,111 +1,43 @@
 import type { Insight } from "./types"
+import { realInsights } from "./real-data"
 
-export const mockInsights: Insight[] = [
-  {
-    id: "1",
-    podcastName: "The Investor's Mindset",
+// Convert real insights to the format expected by the app
+export const mockInsights: Insight[] = realInsights.map((topic, index) => {
+  // Get the first podcast mention for basic data
+  const firstMention = topic.mentionedIn[0]
+
+  // Parse the timestamp to get start and end times
+  const timestampParts = firstMention.timestamp.split(" – ")
+  const startTimePart = timestampParts[0].replace("00:", "")
+  const endTimePart = timestampParts[1].replace("00:", "")
+
+  // Convert timestamp to seconds
+  const convertTimeToSeconds = (timeStr: string) => {
+    const [minutes, seconds] = timeStr.split(":").map(Number)
+    return minutes * 60 + seconds
+  }
+
+  const startTime = convertTimeToSeconds(startTimePart)
+  const endTime = convertTimeToSeconds(endTimePart)
+
+  return {
+    id: topic.id,
+    podcastName: firstMention.podcast,
     podcastImage: "/placeholder.svg?height=100&width=100",
-    episodeNumber: 42,
-    publishDate: "Apr 15, 2025",
-    title: "Fed Rate Decision Impact on Bond Markets",
-    summary:
-      "Analysis of how the recent Federal Reserve rate decision is likely to impact bond markets in the coming quarter.",
-    fullText:
-      "The Federal Reserve's decision to maintain rates at current levels signals a shift in their approach to inflation management. Our analysis suggests this will create opportunities in the 10-year Treasury market, with yields potentially stabilizing around 3.8% by Q3. Asset managers should consider rebalancing fixed income portfolios to capitalize on this trend, particularly in investment-grade corporate bonds which may outperform in this environment.",
-    category: "Market Updates",
-    startTime: 1254,
-    endTime: 1385,
+    episodeNumber: Number.parseInt(firstMention.episode),
+    publishDate: "Apr 2025",
+    title: topic.topic,
+    summary: topic.summary,
+    fullText: topic.summary,
+    category: topic.company,
+    startTime,
+    endTime,
     audioUrl:
       "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
-    fullEpisodeUrl: "https://example.com/episode42",
+    fullEpisodeUrl: "https://example.com/episode",
     saved: false,
-    companies: ["JPMorgan", "Goldman Sachs", "BlackRock"],
-    sectors: ["Banking", "Finance"],
-    keywords: ["Federal Reserve", "Interest Rates", "Bonds"],
-  },
-  {
-    id: "2",
-    podcastName: "Capital Allocators",
-    podcastImage: "/placeholder.svg?height=100&width=100",
-    episodeNumber: 156,
-    publishDate: "Apr 14, 2025",
-    title: "ESG Integration in Portfolio Construction",
-    summary: "Practical approaches to integrating ESG factors into portfolio construction without sacrificing returns.",
-    fullText:
-      "The data now clearly shows that thoughtful ESG integration can enhance risk-adjusted returns when implemented systematically. The key insight from our research is that material ESG factors vary significantly by sector - what matters for energy companies differs dramatically from what matters for technology firms. Asset managers who develop sector-specific ESG frameworks are seeing 50-70 basis points of alpha generation annually compared to those using generalized approaches. This represents a significant edge in institutional portfolio management.",
-    category: "Investment Strategy",
-    startTime: 845,
-    endTime: 978,
-    audioUrl:
-      "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
-    fullEpisodeUrl: "https://example.com/episode156",
-    saved: true,
-    companies: ["BlackRock", "Vanguard", "State Street"],
-    sectors: ["Asset Management", "ESG"],
-    keywords: ["ESG", "Portfolio Construction", "Sustainability"],
-  },
-  {
-    id: "3",
-    podcastName: "Macro Perspectives",
-    podcastImage: "/placeholder.svg?height=100&width=100",
-    episodeNumber: 89,
-    publishDate: "Apr 12, 2025",
-    title: "China's Property Market: Systemic Risk Assessment",
-    summary: "Deep dive into China's property market troubles and potential spillover effects to global markets.",
-    fullText:
-      "The scale of China's property market challenges is significantly larger than most Western analysts recognize. Our on-the-ground research indicates that tier-2 and tier-3 cities are experiencing price declines of 15-20%, not the 5-10% reported in official statistics. This creates potential systemic risk that could impact global commodity markets, particularly iron ore and copper. Asset managers should stress test portfolios against a scenario where Chinese property developers default at 2-3x the current rate over the next 18 months.",
-    category: "Market Updates",
-    startTime: 1120,
-    endTime: 1250,
-    audioUrl:
-      "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
-    fullEpisodeUrl: "https://example.com/episode89",
-    saved: false,
-    companies: ["Evergrande", "Country Garden", "HSBC"],
-    sectors: ["Real Estate", "Banking"],
-    keywords: ["China", "Property Market", "Systemic Risk"],
-  },
-  {
-    id: "4",
-    podcastName: "Private Markets Decoded",
-    podcastImage: "/placeholder.svg?height=100&width=100",
-    episodeNumber: 63,
-    publishDate: "Apr 10, 2025",
-    title: "Venture Capital Dry Powder Analysis",
-    summary: "Analysis of record levels of dry powder in venture capital and implications for asset allocators.",
-    fullText:
-      "Venture capital firms are sitting on approximately $290 billion in dry powder globally, creating a paradoxical situation where early-stage valuations remain elevated despite the public market correction. Our analysis suggests this disconnect will persist through at least Q2 2026, creating potential vintage year risks for institutional investors making new commitments. Asset managers should consider vintage year diversification strategies and potentially underweight 2025 vintage exposures in favor of 2026-2027 commitments when valuations may normalize.",
-    category: "Investment Strategy",
-    startTime: 678,
-    endTime: 792,
-    audioUrl:
-      "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
-    fullEpisodeUrl: "https://example.com/episode63",
-    saved: true,
-    companies: ["Sequoia", "Andreessen Horowitz", "Tiger Global"],
-    sectors: ["Venture Capital", "Private Equity"],
-    keywords: ["Dry Powder", "Valuations", "Startups"],
-  },
-  {
-    id: "5",
-    podcastName: "The Investor's Mindset",
-    podcastImage: "/placeholder.svg?height=100&width=100",
-    episodeNumber: 41,
-    publishDate: "Apr 8, 2025",
-    title: "Algorithmic Trading Strategies for Volatile Markets",
-    summary:
-      "Examination of how quantitative funds are adapting algorithmic strategies to handle increased market volatility.",
-    fullText:
-      "The recent spike in market volatility has exposed weaknesses in traditional mean-reversion algorithms. The most successful quantitative funds have shifted to hybrid models that incorporate machine learning to detect regime changes in real-time. Our research indicates that these adaptive models have outperformed static algorithms by 340 basis points during volatility spikes while maintaining similar Sharpe ratios during normal market conditions. This represents a significant evolution in quantitative investing that asset allocators should factor into manager selection.",
-    category: "Investment Strategy",
-    startTime: 1520,
-    endTime: 1640,
-    audioUrl:
-      "https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Kangaroo_MusiQue_-_The_Neverwritten_Role_Playing_Game.mp3",
-    fullEpisodeUrl: "https://example.com/episode41",
-    saved: false,
-    companies: ["Renaissance Technologies", "Two Sigma", "Citadel"],
-    sectors: ["Quantitative Finance", "Hedge Funds"],
-    keywords: ["Algorithmic Trading", "Machine Learning", "Volatility"],
-  },
-]
+    companies: [topic.company],
+    sectors: topic.tags.slice(1, 3),
+    keywords: topic.tags.slice(3),
+  }
+})
