@@ -14,7 +14,10 @@ export interface Insight {
   fullEpisodeUrl: string
   saved: boolean
   archived: boolean
-  score: number // Added score property
+  score: number
+  month: string
+  viewed: boolean // Added viewed property
+  hasChat: boolean // Added hasChat property
   companies?: string[]
   sectors?: string[]
   keywords?: string[]

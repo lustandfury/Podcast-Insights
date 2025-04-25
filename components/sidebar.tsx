@@ -1,21 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Menu, MessageSquare, Archive, Inbox } from "lucide-react"
+import { Plus, Menu, Archive, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CreateTabModal, type TabFilter } from "@/components/create-tab-modal"
 import type { CustomTab } from "@/lib/types"
 import { cn } from "@/lib/utils"
-
-interface RecentChat {
-  id: string
-  insightId: string
-  insightTitle: string
-  lastUpdated: Date
-  hasUserMessage: boolean
-}
 
 interface UnreadCounts {
   [key: string]: number
@@ -24,24 +16,20 @@ interface UnreadCounts {
 interface SidebarProps {
   activeTab: string
   customTabs: CustomTab[]
-  recentChats?: RecentChat[]
   unreadCounts?: UnreadCounts
   showArchived: boolean
   onTabChange: (tabId: string) => void
   onCreateTab: (name: string, filters: TabFilter) => void
-  onChatSelect?: (insightId: string) => void
   onToggleArchiveView: (tabId: string) => void
 }
 
 export function Sidebar({
   activeTab,
   customTabs,
-  recentChats = [],
   unreadCounts = {},
   showArchived,
   onTabChange,
   onCreateTab,
-  onChatSelect,
   onToggleArchiveView,
 }: SidebarProps) {
   const [isCreateTabModalOpen, setIsCreateTabModalOpen] = useState(false)
@@ -60,15 +48,6 @@ export function Sidebar({
     { id: "Microsoft", name: "Microsoft" },
     { id: "Apple", name: "Apple" },
   ]
-
-  const handleChatSelect = (insightId: string) => {
-    if (onChatSelect) {
-      onChatSelect(insightId)
-    }
-  }
-
-  // Filter recent chats to only include those with user messages
-  const filteredRecentChats = recentChats.filter((chat) => chat.hasUserMessage)
 
   const SidebarContent = () => (
     <div className="flex h-full w-full flex-col">
@@ -188,27 +167,6 @@ export function Sidebar({
                       </Button>
                     )}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {filteredRecentChats.length > 0 && (
-            <>
-              <div className="mt-6 mb-2 px-2">
-                <h4 className="text-sm font-medium text-muted-foreground">Recent Chats</h4>
-              </div>
-              <div className="space-y-1">
-                {filteredRecentChats.map((chat) => (
-                  <Button
-                    key={chat.id}
-                    variant="ghost"
-                    className="w-full justify-start text-left font-normal"
-                    onClick={() => handleChatSelect(chat.insightId)}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="truncate">{chat.insightTitle}</span>
-                  </Button>
                 ))}
               </div>
             </>

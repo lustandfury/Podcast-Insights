@@ -3,7 +3,17 @@
 import type React from "react"
 
 import { useState } from "react"
-import { BookmarkIcon, BookmarkPlus, Share2, MessageSquare, ChevronRight, Play, Pause, Archive } from "lucide-react"
+import {
+  BookmarkIcon,
+  BookmarkPlus,
+  Share2,
+  MessageSquare,
+  ChevronRight,
+  Play,
+  Pause,
+  Archive,
+  Eye,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -97,22 +107,43 @@ export function InsightCard({ insight, onSave, onArchive, onSelect }: InsightCar
 
   return (
     <Card
-      className="overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 border-l-transparent hover:border-l-primary relative group"
+      className={`overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 ${
+        insight.viewed ? "border-l-gray-300 bg-gray-50" : "border-l-transparent hover:border-l-primary"
+      } relative group`}
       onClick={() => onSelect(insight)}
     >
-      {/* Add a chat icon button in the top right */}
+      {/* Status indicators in top right */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        <div className="flex items-center text-muted-foreground text-xs">
-          <MessageSquare className="h-4 w-4 mr-1" />
-          <span>Chat</span>
-        </div>
+        {/* Chat indicator */}
+        {insight.hasChat && (
+          <div className="flex items-center text-primary text-xs">
+            <MessageSquare className="h-4 w-4 mr-1 fill-primary" />
+            <span>Chat</span>
+          </div>
+        )}
+
+        {/* Viewed indicator */}
+        {insight.viewed && (
+          <div className="flex items-center text-gray-500 text-xs">
+            <Eye className="h-4 w-4 mr-1" />
+            <span>Viewed</span>
+          </div>
+        )}
+
         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
+
+      {/* New indicator for unread insights */}
+      {!insight.viewed && (
+        <div className="absolute top-4 left-4 z-10">
+          <Badge className="bg-primary text-white">New</Badge>
+        </div>
+      )}
 
       <CardContent className="p-6">
         <div className="flex items-start">
           <div className="flex-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-6">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
                   {insight.category}
@@ -124,8 +155,12 @@ export function InsightCard({ insight, onSave, onArchive, onSelect }: InsightCar
                 </div>
               </div>
             </div>
-            <h2 className="text-2xl font-playfair font-bold mt-2">{insight.title}</h2>
-            <p className="text-lg text-gray-700 mt-2">{insight.summary}</p>
+            <h2
+              className={`text-2xl font-playfair font-bold mt-2 ${insight.viewed ? "text-gray-700" : "text-gray-900"}`}
+            >
+              {insight.title}
+            </h2>
+            <p className={`text-lg mt-2 ${insight.viewed ? "text-gray-600" : "text-gray-700"}`}>{insight.summary}</p>
 
             {/* Compact podcast sources with play buttons */}
             {podcastSources.length > 0 && (

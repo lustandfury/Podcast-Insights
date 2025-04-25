@@ -11,14 +11,6 @@ import type { CustomTab, Insight } from "@/lib/types"
 import { ArrowDownAZ, ArrowUpAZ, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface RecentChat {
-  id: string
-  insightId: string
-  insightTitle: string
-  lastUpdated: Date
-  hasUserMessage: boolean
-}
-
 interface UnreadCounts {
   [key: string]: number
 }
@@ -35,20 +27,56 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
   const [customTabs, setCustomTabs] = useState<CustomTab[]>([])
   const [activeTab, setActiveTab] = useState("all")
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [recentChats, setRecentChats] = useState<RecentChat[]>([])
   const [showArchived, setShowArchived] = useState(false)
   const [sortOption, setSortOption] = useState<SortOption>("score")
 
-  // Mock unread counts for demonstration
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
-    all: 12,
-    saved: 3,
-    Salesforce: 2,
-    NVIDIA: 5,
-    Google: 1,
-    Microsoft: 3,
-    Apple: 1,
-  })
+  // Calculate unread counts based on insights that haven't been viewed
+  const calculateUnreadCounts = () => {
+    const counts: UnreadCounts = {
+      all: 0,
+      saved: 0,
+      Salesforce: 0,
+      NVIDIA: 0,
+      Google: 0,
+      Microsoft: 0,
+      Apple: 0,
+    }
+
+    // Add custom tab IDs to the counts object
+    customTabs.forEach((tab) => {
+      counts[tab.id] = 0
+    })
+
+    // Only count unarchived and unviewed insights
+    insights
+      .filter((i) => !i.archived && !i.viewed)
+      .forEach((insight) => {
+        // Increment the count for the category
+        if (counts[insight.category] !== undefined) {
+          counts[insight.category]++
+        }
+
+        // Increment the count for "all"
+        counts.all++
+
+        // Increment the count for "saved" if the insight is saved
+        if (insight.saved) {
+          counts.saved++
+        }
+
+        // Increment the count for custom tabs if the insight matches the filters
+        customTabs.forEach((tab) => {
+          if (filterInsightsByCustomTab(insight, tab)) {
+            counts[tab.id]++
+          }
+        })
+      })
+
+    return counts
+  }
+
+  // Calculate unread counts
+  const unreadCounts = calculateUnreadCounts()
 
   const saveInsight = (insightId: string) => {
     setInsights(insights.map((insight) => (insight.id === insightId ? { ...insight, saved: !insight.saved } : insight)))
@@ -69,16 +97,6 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
     if (activeInsight && activeInsight.id === insightId) {
       onInsightSelect(null)
     }
-
-    // Reduce unread count for the category
-    const insight = insights.find((i) => i.id === insightId)
-    if (insight && unreadCounts[insight.category] > 0) {
-      setUnreadCounts((prev) => ({
-        ...prev,
-        [insight.category]: prev[insight.category] - 1,
-        all: prev.all > 0 ? prev.all - 1 : 0,
-      }))
-    }
   }
 
   const handleCreateTab = (name: string, filters: TabFilter) => {
@@ -90,12 +108,6 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
 
     setCustomTabs([...customTabs, newTab])
     setActiveTab(newTab.id) // Switch to the new tab
-
-    // Add unread count for the new tab
-    setUnreadCounts((prev) => ({
-      ...prev,
-      [newTab.id]: 0,
-    }))
   }
 
   const filterInsightsByCustomTab = (insight: Insight, tab: CustomTab): boolean => {
@@ -151,8 +163,6 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
     // Filter by archived status
     filteredInsights = filteredInsights.filter((insight) => insight.archived === showArchived)
 
-    // Sort insights based on the selected sort option  => insight.archived === showArchived)
-
     // Sort insights based on the selected sort option
     switch (sortOption) {
       case "score":
@@ -169,61 +179,59 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
     return filteredInsights
   }
 
+  // Group insights by month
+  const groupInsightsByMonth = () => {
+    const filteredInsights = getFilteredInsights()
+    const groupedInsights: { [month: string]: Insight[] } = {}
+
+    // Define the order of months
+    const monthOrder = ["April", "March", "February"]
+
+    // Initialize groups for each month
+    monthOrder.forEach((month) => {
+      groupedInsights[month] = []
+    })
+
+    // Group insights by month
+    filteredInsights.forEach((insight) => {
+      if (groupedInsights[insight.month]) {
+        groupedInsights[insight.month].push(insight)
+      }
+    })
+
+    return { groupedInsights, monthOrder }
+  }
+
   // Handle selecting an insight with transition
   const handleSelectInsight = (insight: Insight) => {
     setIsTransitioning(true)
+
+    // Mark the insight as viewed if it's not already
+    if (!insight.viewed) {
+      setInsights(insights.map((i) => (i.id === insight.id ? { ...i, viewed: true } : i)))
+    }
+
     // Short delay to allow animation to start
     setTimeout(() => {
-      onInsightSelect(insight)
+      onInsightSelect({
+        ...insight,
+        viewed: true,
+      })
       setIsTransitioning(false)
-
-      // When selecting an insight, reduce the unread count for its category
-      if (unreadCounts[insight.category] > 0) {
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [insight.category]: prev[insight.category] - 1,
-          all: prev.all > 0 ? prev.all - 1 : 0,
-        }))
-      }
     }, 300)
   }
 
   // Handle chat creation
-  const handleChatCreated = (insightId: string, chatId: string, hasUserMessage: boolean) => {
-    const insight = insights.find((i) => i.id === insightId)
-    if (!insight) return
+  const handleChatCreated = (insightId: string) => {
+    // Mark the insight as having a chat
+    setInsights(insights.map((insight) => (insight.id === insightId ? { ...insight, hasChat: true } : insight)))
 
-    // Check if we already have a chat for this insight
-    const existingChatIndex = recentChats.findIndex((chat) => chat.insightId === insightId)
-
-    if (existingChatIndex !== -1) {
-      // Update existing chat
-      const updatedChats = [...recentChats]
-      updatedChats[existingChatIndex] = {
-        ...updatedChats[existingChatIndex],
-        id: chatId,
-        lastUpdated: new Date(),
-        hasUserMessage,
-      }
-      setRecentChats(updatedChats)
-    } else {
-      // Add new chat
-      const newChat: RecentChat = {
-        id: chatId,
-        insightId,
-        insightTitle: insight.title,
-        lastUpdated: new Date(),
-        hasUserMessage,
-      }
-      setRecentChats([newChat, ...recentChats])
-    }
-  }
-
-  // Handle selecting a chat from the sidebar
-  const handleChatSelect = (insightId: string) => {
-    const insight = insights.find((i) => i.id === insightId)
-    if (insight) {
-      handleSelectInsight(insight)
+    // If we're in the detail view, update the selected insight too
+    if (activeInsight && activeInsight.id === insightId) {
+      onInsightSelect({
+        ...activeInsight,
+        hasChat: true,
+      })
     }
   }
 
@@ -246,11 +254,14 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
           onBack={() => onInsightSelect(null)}
           onSave={() => saveInsight(activeInsight.id)}
           onArchive={() => archiveInsight(activeInsight.id)}
-          onChatCreated={(insightId, chatId, hasUserMessage) => handleChatCreated(insightId, chatId, hasUserMessage)}
+          onChatCreated={() => handleChatCreated(activeInsight.id)}
         />
       </motion.div>
     )
   }
+
+  // Get grouped insights
+  const { groupedInsights, monthOrder } = groupInsightsByMonth()
 
   // Otherwise show the feed
   return (
@@ -258,12 +269,10 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
       <Sidebar
         activeTab={activeTab}
         customTabs={customTabs}
-        recentChats={recentChats}
         unreadCounts={unreadCounts}
         showArchived={showArchived}
         onTabChange={setActiveTab}
         onCreateTab={handleCreateTab}
-        onChatSelect={handleChatSelect}
         onToggleArchiveView={handleToggleArchiveView}
       />
 
@@ -329,17 +338,31 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
           </div>
         </div>
 
-        {/* Insights list */}
-        <div className="space-y-4 mt-4">
-          {getFilteredInsights().map((insight) => (
-            <InsightCard
-              key={insight.id}
-              insight={insight}
-              onSave={() => saveInsight(insight.id)}
-              onArchive={() => archiveInsight(insight.id)}
-              onSelect={handleSelectInsight}
-            />
-          ))}
+        {/* Insights list grouped by month */}
+        <div className="mt-4">
+          {monthOrder.map((month) => {
+            const monthInsights = groupedInsights[month]
+
+            // Only show months that have insights
+            if (monthInsights.length === 0) return null
+
+            return (
+              <div key={month} className="mb-8">
+                <h3 className="text-lg font-semibold mb-4 sticky top-0 bg-gray-50 py-2 z-10 border-b">{month} 2025</h3>
+                <div className="space-y-4">
+                  {monthInsights.map((insight) => (
+                    <InsightCard
+                      key={insight.id}
+                      insight={insight}
+                      onSave={() => saveInsight(insight.id)}
+                      onArchive={() => archiveInsight(insight.id)}
+                      onSelect={handleSelectInsight}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
 
           {getFilteredInsights().length === 0 && (
             <div className="text-center py-8">

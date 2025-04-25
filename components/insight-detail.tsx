@@ -29,7 +29,7 @@ interface InsightDetailProps {
   onBack: () => void
   onSave: () => void
   onArchive: () => void
-  onChatCreated?: (insightId: string, chatId: string, hasUserMessage: boolean) => void
+  onChatCreated?: () => void
 }
 
 export function InsightDetail({ insight, onBack, onSave, onArchive, onChatCreated }: InsightDetailProps) {
@@ -115,8 +115,8 @@ export function InsightDetail({ insight, onBack, onSave, onArchive, onChatCreate
   const keyPoints = realInsight ? generateKeyPoints(realInsight.summary) : []
 
   const handleChatCreated = (chatId: string, hasUserMessage: boolean) => {
-    if (onChatCreated) {
-      onChatCreated(insight.id, chatId, hasUserMessage)
+    if (hasUserMessage && onChatCreated) {
+      onChatCreated()
     }
   }
 

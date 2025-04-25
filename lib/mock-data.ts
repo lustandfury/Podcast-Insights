@@ -23,6 +23,12 @@ const generateScore = (company: string, topic: string): number => {
   return Math.min(Math.round(score * 10) / 10, 10)
 }
 
+// Helper function to randomly assign a month
+const getRandomMonth = (): string => {
+  const months = ["February", "March", "April"]
+  return months[Math.floor(Math.random() * months.length)]
+}
+
 // Convert real insights to the format expected by the app
 export const mockInsights: Insight[] = realInsights.map((topic, index) => {
   // Get the first podcast mention for basic data
@@ -45,12 +51,18 @@ export const mockInsights: Insight[] = realInsights.map((topic, index) => {
   // Generate a score for this insight
   const score = generateScore(topic.company, topic.topic)
 
+  // Randomly assign a month
+  const month = getRandomMonth()
+
+  // Update publishDate to include the month
+  const publishDate = `${month} 2025`
+
   return {
     id: topic.id,
     podcastName: firstMention.podcast,
     podcastImage: "/placeholder.svg?height=100&width=100",
     episodeNumber: Number.parseInt(firstMention.episode),
-    publishDate: "Apr 2025",
+    publishDate,
     title: topic.topic,
     summary: topic.summary,
     fullText: topic.summary,
@@ -63,6 +75,9 @@ export const mockInsights: Insight[] = realInsights.map((topic, index) => {
     saved: false,
     archived: false,
     score,
+    month,
+    viewed: false, // Initialize as not viewed
+    hasChat: false, // Initialize as no chat
     companies: [topic.company],
     sectors: topic.tags.slice(1, 3),
     keywords: topic.tags.slice(3),
