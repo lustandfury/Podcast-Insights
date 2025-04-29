@@ -283,7 +283,7 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
         transition={{ duration: 0.3 }}
       >
         {/* Active tab header */}
-        <div className="flex items-center justify-between border-b pb-2 max-w-2xl mx-auto w-full">
+        <div className="flex items-center justify-between border-b pb-2 max-w-4xl mx-auto w-full">
           <h2 className="text-xl font-semibold">
             {activeTab === "all"
               ? `${showArchived ? "Archived" : "All"} Insights`
@@ -339,7 +339,7 @@ export function PodcastFeed({ activeInsight, onInsightSelect }: PodcastFeedProps
         </div>
 
         {/* Insights list grouped by month */}
-        <div className="mt-4 max-w-2xl mx-auto">
+        <div className="mt-4 max-w-4xl mx-auto">
           {monthOrder.map((month) => {
             const monthInsights = groupedInsights[month]
 
